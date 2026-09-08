@@ -4,8 +4,10 @@
  * Everything here is plain data - the same shape the page accepts through
  * "Upload programme" and produces through "Download programme".
  *
- * Delete this file if you do not need it; it registers a programme with an
- * empty catalogue, which is harmless but appears in the programme picker.
+ * This file is a skeleton and is deliberately NOT loaded by index.html, so the
+ * placeholder programme below never shows up in the picker. It is still checked
+ * by scripts/validate-programmes.mjs, which keeps the example honest.
+ * Delete it if you do not need it.
  */
 
 registerProgramme({

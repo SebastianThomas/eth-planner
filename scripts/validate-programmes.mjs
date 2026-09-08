@@ -9,6 +9,15 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const DIR = "programmes";
+const ENTRY = "index.html";
+// Three kinds of file live in programmes/:
+//   registry.js  - infrastructure. Must ship (it defines registerProgramme), but
+//                  is not a programme, so it is not validated as one.
+//   template.js  - a skeleton. Must NOT ship, or its placeholder programme turns
+//                  up in the picker. Still validated, to keep the example honest.
+//   everything else - a real programme. Must ship.
+const INFRASTRUCTURE = new Set(["registry.js"]);
+const MUST_NOT_SHIP = new Set(["template.js"]);
 const EXAM_MODES = new Set(["oral", "written", "none", "?"]);
 const SEMESTERS = new Set(["HS", "FS", "BOTH", "NA"]);
 
@@ -19,6 +28,23 @@ const warn = (m) => warnings.push(m);
 
 const files = readdirSync(DIR).filter(f => f.endsWith(".js") && f !== "registry.js");
 if (!files.length) fail("no programme definitions found");
+
+// Cross-check against index.html, both directions: a new programme that nobody
+// wired up is invisible, and a stale <script> tag is a 404 at runtime.
+const html = readFileSync(ENTRY, "utf8");
+const allJs = readdirSync(DIR).filter(f => f.endsWith(".js"));
+for (const f of allJs) {
+  const referenced = html.includes(`${DIR}/${f}`);
+  if (MUST_NOT_SHIP.has(f)) {
+    if (referenced) fail(`${ENTRY} loads ${DIR}/${f}, which is a skeleton and must not ship`);
+  } else if (!referenced) {
+    const what = INFRASTRUCTURE.has(f) ? "is required but" : "is a programme that";
+    fail(`${DIR}/${f} ${what} is never loaded by ${ENTRY} - add a <script> tag for it`);
+  }
+}
+for (const m of html.matchAll(new RegExp(`${DIR}/([A-Za-z0-9._-]+\\.js)`, "g"))) {
+  if (!allJs.includes(m[1])) fail(`${ENTRY} references ${DIR}/${m[1]}, which does not exist`);
+}
 
 const programmes = [];
 for (const f of files) {

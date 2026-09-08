@@ -27,14 +27,6 @@ jobs:
             echo "ok  $f"
           done
 
+      # Also cross-checks index.html against programmes/ in both directions.
       - name: Validate programme definitions
         run: node scripts/validate-programmes.mjs
-
-      - name: Check the page references every shipped programme
-        run: |
-          missing=0
-          for f in programmes/*.js; do
-            case "$f" in programmes/registry.js) continue ;; esac
-            grep -q "$f" index.html || { echo "::error::$f is not loaded by index.html"; missing=1; }
-          done
-          exit $missing
