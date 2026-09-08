@@ -344,8 +344,8 @@
     const cards = [
       { lbl: "Earned", val: t.earned, sub: "credits awarded", cls: "" },
       { lbl: "Provisional", val: t.provisional, sub: "registered or fixed, ungraded", cls: "" },
-      { lbl: "Outstanding", val: t.outstanding, sub: "still to arrange", cls: t.outstanding ? "warn" : "" },
-      { lbl: "Total", val: t.live, sub: `of ${prog.totalRequired} required`,
+      { lbl: "Still to arrange", val: t.outstanding, sub: "still to arrange", cls: t.outstanding ? "warn" : "" },
+      { lbl: "Planned total", val: t.live, sub: `of ${prog.totalRequired} required`,
         cls: t.live >= prog.totalRequired && (!prog.maxAccreditable || t.live <= prog.maxAccreditable) ? "ok" : "bad" },
       { lbl: "Grade average", val: fmtGrade(g.value),
         sub: g.value === null ? "no grades entered yet" : `over ${g.credits} graded ECTS`, cls: "" },
@@ -369,16 +369,16 @@
     const push = (key, req, done, fixed, live, note, indent) => {
       const mf = Math.max(0, req - fixed), ml = Math.max(0, req - live);
       const me = Math.max(0, req - done);
-      const pill = !req ? ""
+      const pill = !req ? `<span class="pill unk">no minimum</span>`
         : me === 0 ? `<span class="pill ok">met</span>`
-        : mf === 0 ? `<span class="pill prov">provisional</span>`
-        : ml === 0 ? `<span class="pill later">needs open</span>`
-        : `<span class="pill short">short ${ml}</span>`;
+        : mf === 0 ? `<span class="pill prov">covered, awaiting grades</span>`
+        : ml === 0 ? `<span class="pill later">${mf} ECTS still to arrange</span>`
+        : `<span class="pill short">${mf} ECTS needed · ${ml} unplanned</span>`;
       rows.push(`<tr><td${indent ? ' style="padding-left:22px"' : ""}>${indent ? `<em>${esc(key)}</em>` : `<strong>${esc(key)}</strong>`}</td>
-        <td class="num">${req || "&ndash;"}</td><td class="num">${done || "&ndash;"}</td>
-        <td class="num">${fixed - done || "&ndash;"}</td><td class="num">${live - fixed || "&ndash;"}</td>
-        <td class="num"><strong>${fixed} (${live})</strong></td>
-        <td class="num">${me} / ${mf} / ${ml} ${pill}</td><td class="cnote">${esc(note || "")}</td></tr>`);
+        <td class="num">${done || "&ndash;"}</td>
+        <td class="num">${fixed - done || "&ndash;"}</td>
+        <td class="num${req && mf > 0 ? (ml > 0 ? " credit-short" : " credit-pending") : ""}">${req || "&ndash;"}</td>
+        <td>${pill}</td><td class="cnote">${esc(note || "")}</td></tr>`);
     };
     for (const c of categoryList()) {
       if (c.key === "(not counted)") continue;
@@ -390,11 +390,8 @@
       }
     }
     const t = totals();
-    rows.push(`<tr><td><strong>TOTAL</strong></td><td class="num"><strong>${prog.totalRequired}</strong></td>
-      <td class="num"><strong>${t.done}</strong></td><td class="num"><strong>${t.registeredFixed}</strong></td>
-      <td class="num"><strong>${t.open}</strong></td><td class="num"><strong>${t.fixed} (${t.live})</strong></td>
-      <td class="num"><strong>${Math.max(0, prog.totalRequired - t.fixed)} (${Math.max(0, prog.totalRequired - t.live)})</strong></td>
-      <td class="cnote">${prog.maxAccreditable ? `At most ${prog.maxAccreditable} ECTS may be accredited.` : ""}</td></tr>`);
+    push("TOTAL", prog.totalRequired, t.earned, t.settled, t.live,
+      prog.maxAccreditable ? `At most ${prog.maxAccreditable} ECTS may be accredited.` : "", false);
     $("#cat-table tbody").innerHTML = rows.join("");
   }
 
@@ -412,17 +409,54 @@
       return `<tr><td><strong>${esc(s)}</strong></td>
         <td class="num">${earned || "&ndash;"}</td>
         <td class="num">${provisional || "&ndash;"}</td>
-        <td class="num">${outstanding || "&ndash;"}</td>
+        <td class="num${outstanding ? " credit-pending" : ""}">${outstanding || "&ndash;"}</td>
         <td class="num"><strong>${live}</strong>${heavy ? ' <span class="pill short">heavy</span>' : ""}</td>
         <td class="num"><strong>${fmtGrade(g.value)}</strong></td>
         <td class="num">${n("oral") ? `<span class="pill ${manyOral ? "oral" : "written"}">${n("oral")}</span>` : "&ndash;"}</td>
         <td class="num">${n("written") || "&ndash;"}</td><td class="num">${n("none") || "&ndash;"}</td>
-        <td class="cnote">${inS.map(e => esc(e.course.title)).join(" &middot; ")}</td></tr>`;
+        <td class="cnote">${inS.map(e => `<button type="button" class="semester-course" data-course="${esc(e.id)}">${esc(e.course.title)}</button>`).join(" &middot; ")}</td></tr>`;
     }).join("");
+    // Keep the course list stable while previewing only its row's numbers.
+    $("#sem-table tbody").querySelectorAll("tr").forEach(row => {
+      const cells = Array.from(row.cells).slice(1, 9);
+      const original = cells.map(cell => ({ html: cell.innerHTML, cls: cell.className }));
+      let hovered = null, focused = null;
+      const preview = () => {
+        const button = hovered || focused;
+        row.querySelectorAll(".semester-course").forEach(b => b.classList.toggle("previewing", b === button));
+        cells.forEach((cell, i) => {
+          cell.innerHTML = original[i].html;
+          cell.className = original[i].cls;
+        });
+        if (!button) return;
+        const id = button.dataset.course, course = CAT[id], plan = state.plan[id];
+        const credits = ectsOf(id);
+        const values = [
+          EARNED.includes(plan.status) ? credits : 0,
+          PROVISIONAL.includes(plan.status) ? credits : 0,
+          OUTSTANDING.includes(plan.status) ? credits : 0,
+          credits, fmtGrade(course.passFail ? null : gradeOf(id)),
+          course.exam === "oral" ? 1 : 0,
+          course.exam === "written" ? 1 : 0,
+          course.exam === "none" ? 1 : 0,
+        ];
+        cells.forEach((cell, i) => {
+          cell.textContent = values[i] || "–";
+          cell.className = "num course-preview" + (i === 2 && values[i] ? " credit-pending" : "");
+          if (i >= 5 && values[i]) cell.classList.add("exam-preview");
+        });
+      };
+      row.querySelectorAll(".semester-course").forEach(button => {
+        button.addEventListener("mouseenter", () => { hovered = button; preview(); });
+        button.addEventListener("mouseleave", () => { hovered = null; preview(); });
+        button.addEventListener("focus", () => { focused = button; preview(); });
+        button.addEventListener("blur", () => { focused = null; preview(); });
+      });
+    });
     const t = totals(), g = gpa();
     $("#sem-total").innerHTML = `<tr><td><strong>All semesters</strong></td>
       <td class="num"><strong>${t.earned}</strong></td><td class="num"><strong>${t.provisional}</strong></td>
-      <td class="num"><strong>${t.outstanding}</strong></td><td class="num"><strong>${t.live}</strong></td>
+      <td class="num${t.outstanding ? " credit-pending" : ""}"><strong>${t.outstanding}</strong></td><td class="num"><strong>${t.live}</strong></td>
       <td class="num"><strong>${fmtGrade(g.value)}</strong></td>
       <td class="num" colspan="4">${g.value === null ? "no grades entered"
         : `weighted over ${g.credits} ECTS from ${g.courses} course(s)` +

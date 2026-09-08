@@ -82,7 +82,13 @@ th{text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;lette
 td{padding:7px 9px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
 .num{text-align:right}
+.credit-short{color:var(--red);font-weight:600}
+.credit-pending{color:var(--amber);font-weight:600}
+.pill.prov{background:var(--line-soft);color:var(--ink)}
 th.num{text-align:right}
+.credit-short{color:var(--red);font-weight:600}
+.credit-pending{color:var(--amber);font-weight:600}
+.pill.prov{background:var(--line-soft);color:var(--ink)}
 .cid{font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;white-space:nowrap}
 .ctitle{font-weight:550}
 .cnote{color:var(--faint);font-size:11.5px;margin-top:2px;max-width:52ch}
@@ -164,3 +170,13 @@ tfoot#sem-total td{border-top:2px solid var(--blue);padding-top:9px}
 /* Keep DOM order (Cancel, Download, Clear) when stacked: the destructive
    action stays last rather than landing under the thumb first. */
 @media (max-width:520px){ .modal menu{flex-direction:column} .modal menu .btn{width:100%} }
+
+/* Preview one course within its semester without moving the course list. */
+.semester-course{appearance:none;border:0;padding:0;background:transparent;color:inherit;
+  font:inherit;text-align:left;cursor:pointer;border-radius:3px}
+.semester-course.previewing{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.semester-course:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+#sem-table tbody td.num{transition:background-color .18s ease}
+#sem-table td.course-preview{background:var(--line-soft)}
+#sem-table td.exam-preview{background:var(--line);box-shadow:inset 0 -2px var(--blue)}
+@media (prefers-reduced-motion:reduce){#sem-table tbody td.num{transition:none}}

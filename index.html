@@ -75,13 +75,13 @@
   <section class="panel">
     <h2>Category requirements</h2>
     <p class="hint"><strong>Earned</strong> = credits awarded. <strong>Provisional</strong> = registered or fixed, not yet graded.
-       <strong>Outstanding</strong> = still to arrange. The Missing column reads
-       <em>vs earned / vs earned+provisional / vs everything</em>.</p>
+       <strong>Required</strong> = what the regulations demand. Amber requirements still need courses arranged; red requirements need more courses added to the plan.
+       Credits count toward the category assigned to each course.</p>
     <div class="tablewrap">
       <table id="cat-table">
         <thead><tr>
-          <th>Category</th><th class="num">Req.</th><th class="num">Earned</th><th class="num">Provis.</th>
-          <th class="num">Outst.</th><th class="num">Settled (all)</th><th class="num">Missing</th><th>Note</th>
+          <th>Category</th><th class="num">Earned</th><th class="num">Provisional</th>
+          <th class="num">Required</th><th>Status</th><th>Note</th>
         </tr></thead>
         <tbody></tbody>
       </table>
@@ -90,11 +90,13 @@
 
   <section class="panel">
     <h2>Load and grades per semester</h2>
-    <p class="hint">The grade average is credit-weighted, the way a final transcript computes it. Pass/fail work is excluded.</p>
+    <p class="hint">Hover or focus a course to preview its credits, grade and exam type; leave it to restore semester totals.
+       Provisional credits are shown separately for each semester. <strong>Still to arrange</strong> = courses marked Open, not yet committed.
+       The grade average is credit-weighted, the way a final transcript computes it. Pass/fail work is excluded.</p>
     <div class="tablewrap">
       <table id="sem-table">
-        <thead><tr><th>Semester</th><th class="num">Earned</th><th class="num">Provis.</th>
-        <th class="num">Outst.</th><th class="num">Total</th><th class="num">Avg grade</th>
+        <thead><tr><th>Semester</th><th class="num">Earned</th><th class="num">Provisional</th>
+        <th class="num">Still to arrange</th><th class="num">Planned total</th><th class="num">Avg grade</th>
         <th class="num">Oral</th><th class="num">Written</th><th class="num">No exam</th><th>Courses</th></tr></thead>
         <tbody></tbody>
         <tfoot id="sem-total"></tfoot>

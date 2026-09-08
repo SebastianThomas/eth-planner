@@ -17,11 +17,11 @@ plain data files — see [Adding a programme](#adding-a-programme).
 Pick your programme, major and minor; add courses; assign each one a **category**, **semester** and
 **status**. Everything else updates live.
 
-- **Three-way accounting.** *Earned* (credits actually awarded), *Provisional* (registered or
-  fixed, but not yet graded) and *Outstanding* (still to arrange) are tracked separately everywhere —
-  totals, per-category and per-semester. The Missing column reads *vs earned / vs earned+provisional /
-  vs everything*, and each category shows whether it is **met**, **provisional**, **needs open** or
-  **short**. *Considering* and *Waitlist* are visible but count for nothing.
+- **Clear credit accounting.** Category requirements show *Earned*, *Provisional* (registered or
+  fixed, not yet graded), then *Required*. A status explains whether the minimum is met,
+  awaiting grades, still to arrange, or needs more courses added. Requirements needing attention
+  are colored; earned and provisional credits stay neutral. The semester table breaks down
+  commitments by semester. *Considering* and *Waitlist* are visible but count for nothing.
 - **Grade averages.** Enter a grade per course and get the credit-weighted average per semester and
   overall, the way a final transcript computes it. Pass/fail work is excluded automatically, and
   completed courses still lacking a grade are flagged rather than silently skipped.
