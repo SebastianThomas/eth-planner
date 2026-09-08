@@ -1,0 +1,40 @@
+name: Lint & Build
+
+on:
+  workflow_call:
+
+jobs:
+  lint-build:
+    name: Lint & check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      # There is no build step - the app ships as-is. So the gate instead
+      # proves the JS parses and every programme definition is internally
+      # consistent, which is what actually breaks this project.
+      - name: Syntax-check JavaScript
+        run: |
+          for f in app.js programmes/*.js; do
+            node --check "$f" || exit 1
+            echo "ok  $f"
+          done
+
+      - name: Validate programme definitions
+        run: node scripts/validate-programmes.mjs
+
+      - name: Check the page references every shipped programme
+        run: |
+          missing=0
+          for f in programmes/*.js; do
+            case "$f" in programmes/registry.js) continue ;; esac
+            grep -q "$f" index.html || { echo "::error::$f is not loaded by index.html"; missing=1; }
+          done
+          exit $missing

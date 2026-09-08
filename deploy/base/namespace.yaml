@@ -1,0 +1,6 @@
+---
+# Placeholder name - the prod/ overlay rewrites it via `namespace:`.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eth-planner

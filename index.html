@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Planner</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Study Planner</h1>
+      <p id="brandsub">Plan a degree against its real credit rules.</p>
+    </div>
+    <div class="tools">
+      <button id="btn-export" class="btn">Download plan</button>
+      <label class="btn" for="file-import">Upload plan</label>
+      <input type="file" id="file-import" accept="application/json,.json" hidden>
+      <button id="btn-copy" class="btn ghost">Copy JSON</button>
+      <button id="btn-clear" class="btn ghost danger">Clear</button>
+    </div>
+  </div>
+</header>
+
+<div id="toast" class="toast" hidden></div>
+
+<dialog id="confirm-clear" class="modal">
+  <form method="dialog">
+    <h2>Clear everything?</h2>
+    <p id="clear-detail"></p>
+    <p class="warn-line">This cannot be undone. Your plan lives only in this browser, so once it is
+       gone the only way back is a plan file you saved earlier.</p>
+    <menu>
+      <button value="cancel" class="btn ghost" autofocus>Cancel</button>
+      <button value="download" class="btn ghost">Download a copy first</button>
+      <button value="clear" class="btn danger-solid">Clear everything</button>
+    </menu>
+  </form>
+</dialog>
+
+<main class="wrap">
+
+  <!-- ---------------------------------------------------------- setup -->
+  <section class="panel setup">
+    <div class="panelhead">
+      <h2>Setup</h2>
+      <div class="filters">
+        <label class="btn ghost sm" for="file-prog">Upload programme</label>
+        <input type="file" id="file-prog" accept="application/json,.json" hidden>
+        <button id="btn-prog-export" class="btn ghost sm">Download programme</button>
+      </div>
+    </div>
+    <p class="hint">
+      Everything here is stored in this browser only, and travels in the plan file you download.
+      Nothing is sent anywhere.
+    </p>
+    <div class="grid-setup">
+      <label>Programme<select id="f-programme" class="inp wide"></select></label>
+      <label>Your name <span class="opt">optional</span><input id="f-name" class="inp wide" type="text" placeholder="left blank by default" autocomplete="off"></label>
+      <label>Student number <span class="opt">optional</span><input id="f-sid" class="inp wide" type="text" placeholder="optional" autocomplete="off"></label>
+      <label>Major<select id="f-major" class="inp wide"></select></label>
+      <label>Minor<select id="f-minor" class="inp wide"></select></label>
+      <label>Semesters <span class="opt">comma separated, in order</span><input id="f-semesters" class="inp wide" type="text" placeholder="HS26, FS27, HS27"></label>
+      <label>Max ECTS per semester<input id="f-maxects" class="inp" type="number" min="1" max="99"></label>
+      <label>Max oral exams per semester<input id="f-maxorals" class="inp" type="number" min="0" max="99"></label>
+    </div>
+    <p id="combo-warning" class="combowarn" hidden></p>
+  </section>
+
+  <section class="cards" id="cards"></section>
+  <section id="alerts" class="alerts"></section>
+
+  <section class="panel">
+    <h2>Category requirements</h2>
+    <p class="hint"><strong>Earned</strong> = credits awarded. <strong>Provisional</strong> = registered or fixed, not yet graded.
+       <strong>Outstanding</strong> = still to arrange. The Missing column reads
+       <em>vs earned / vs earned+provisional / vs everything</em>.</p>
+    <div class="tablewrap">
+      <table id="cat-table">
+        <thead><tr>
+          <th>Category</th><th class="num">Req.</th><th class="num">Earned</th><th class="num">Provis.</th>
+          <th class="num">Outst.</th><th class="num">Settled (all)</th><th class="num">Missing</th><th>Note</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Load and grades per semester</h2>
+    <p class="hint">The grade average is credit-weighted, the way a final transcript computes it. Pass/fail work is excluded.</p>
+    <div class="tablewrap">
+      <table id="sem-table">
+        <thead><tr><th>Semester</th><th class="num">Earned</th><th class="num">Provis.</th>
+        <th class="num">Outst.</th><th class="num">Total</th><th class="num">Avg grade</th>
+        <th class="num">Oral</th><th class="num">Written</th><th class="num">No exam</th><th>Courses</th></tr></thead>
+        <tbody></tbody>
+        <tfoot id="sem-total"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panelhead">
+      <h2>Your plan</h2>
+      <label class="chk"><input type="checkbox" id="show-inactive"> show dropped and not taken</label>
+    </div>
+    <div class="tablewrap">
+      <table id="plan-table">
+        <thead><tr>
+          <th>Course</th><th class="num">ECTS</th><th>Exam</th>
+          <th>Counts towards</th><th>Semester</th><th>Status</th><th class="num">Grade</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="plan-empty" class="empty" hidden>
+      Nothing here yet. Pick your programme, major and minor above, then add courses from the catalogue below.
+    </p>
+  </section>
+
+  <section class="panel">
+    <div class="panelhead">
+      <h2>Course catalogue</h2>
+      <div class="filters">
+        <input type="search" id="cat-search" placeholder="search title or number">
+        <select id="cat-filter"></select>
+        <select id="sem-filter">
+          <option value="">any semester</option>
+          <option value="HS">autumn only</option>
+          <option value="FS">spring only</option>
+        </select>
+        <select id="exam-filter">
+          <option value="">any assessment</option>
+          <option value="none">no exam</option>
+          <option value="written">written</option>
+          <option value="oral">oral</option>
+          <option value="?">unverified</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="only-eligible" checked> only what my major/minor allows</label>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table id="cat-browse">
+        <thead><tr><th>Course</th><th class="num">ECTS</th><th>Sem.</th><th>Exam</th>
+        <th>Counts towards</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="foot" id="foot"></footer>
+</main>
+
+<script src="programmes/registry.js"></script>
+<script src="programmes/eth-msc-computer-science-2020.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

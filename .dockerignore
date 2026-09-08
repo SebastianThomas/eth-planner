@@ -1,0 +1,9 @@
+.git
+.github
+deploy
+node_modules
+*.md
+
+# Personal plans must never be baked into a published image.
+*.json
+*.env

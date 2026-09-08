@@ -1,0 +1,107 @@
+name: deploy
+run-name: "deploy prod @ ${{ inputs.tag }}"
+
+# Prod is the only environment for this app, so deployment is MANUAL ONLY.
+# A tag push builds nothing on its own - you pick the tag to ship deliberately.
+#
+# Two guards before anything is built:
+#   - pre-release tags (v2026.0.16-rc.1) are rejected
+#   - the tag must be reachable from main
+# The second guard is stricter than sthomas.ch's prod, which only checks the
+# first. With no dev environment to catch a bad tag, it is worth having; drop
+# the `git merge-base` step if you would rather ship arbitrary tags.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to build and deploy (e.g. v2026.0.16)
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - id: check
+        env:
+          REF: ${{ inputs.tag }}
+        run: |
+          echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
+          case "$REF" in
+            *-*)
+              echo "proceed=false" >> "$GITHUB_OUTPUT"
+              echo "::error::$REF is a pre-release tag - not deploying to prod"
+              exit 1 ;;
+          esac
+          git fetch origin main --quiet
+          if git merge-base --is-ancestor HEAD origin/main; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            echo "::error::$REF is not reachable from main - not deploying to prod"
+            exit 1
+          fi
+
+  lint-build:
+    needs: gate
+    uses: ./.github/workflows/lint-build.yml
+
+  build:
+    needs: [gate, lint-build]
+    runs-on: ubuntu-latest
+    environment: Prod
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Build & push
+        uses: ./.github/actions/docker-build-push
+        with:
+          image-name: ${{ secrets.DOCKERHUB_USERNAME }}/eth-planner
+          dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+          tags: |
+            type=raw,value=${{ needs.gate.outputs.version }}
+            type=raw,value=latest
+
+  deploy:
+    needs: [gate, build]
+    runs-on: ubuntu-latest
+    environment: Prod
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Image ref
+        env:
+          VERSION: ${{ needs.gate.outputs.version }}
+        run: echo "IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/eth-planner:${VERSION}" >> "$GITHUB_ENV"
+
+      - uses: SebastianThomas/homelab-actions/headscale-connect@v1
+        with:
+          auth-key: ${{ secrets.TS_AUTHKEY }}
+          login-server: ${{ secrets.HEADSCALE_URL }}
+          ping: kube-cp-01
+
+      - uses: SebastianThomas/homelab-actions/kube-deploy@v1
+        with:
+          server: ${{ secrets.KUBE_API }}
+          ca: ${{ secrets.KUBE_CA }}
+          token: ${{ secrets.KUBE_TOKEN }}
+          namespace: eth-planner-prod
+          manifests: deploy/prod
+          rollout: deployment/eth-planner
+          image: ${{ env.IMAGE }}

@@ -1,0 +1,33 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eth-planner
+  labels:
+    app: eth-planner
+    app.kubernetes.io/name: eth-planner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eth-planner
+  template:
+    metadata:
+      labels:
+        app: eth-planner
+        app.kubernetes.io/name: eth-planner
+    spec:
+      containers:
+        - name: eth-planner
+          image: ${APP_IMAGE}   # substituted by homelab-actions/kube-deploy
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet: { path: /, port: 80 }
+            initialDelaySeconds: 3
+          livenessProbe:
+            httpGet: { path: /, port: 80 }
+            initialDelaySeconds: 10
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 64Mi }

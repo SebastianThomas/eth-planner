@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eth-planner
+spec:
+  selector:
+    app: eth-planner
+  ports:
+    - port: 80
+      targetPort: 80

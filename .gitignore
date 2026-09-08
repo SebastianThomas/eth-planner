@@ -1,0 +1,5 @@
+.claude
+
+# Personal plans stay local. Download yours from the page; it never gets committed.
+*.json
+*.env
