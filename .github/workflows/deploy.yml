@@ -1,20 +1,29 @@
 name: deploy
-run-name: "deploy prod @ ${{ inputs.tag }}"
+run-name: "deploy prod @ ${{ inputs.tag || github.ref_name }}${{ github.event_name == 'workflow_dispatch' && ' (manual)' || '' }}"
 
-# Prod is the only environment for this app, so deployment is MANUAL ONLY.
-# A tag push builds nothing on its own - you pick the tag to ship deliberately.
+# Prod is the only environment. Two ways in:
 #
-# Two guards before anything is built:
-#   - pre-release tags (v2026.0.16-rc.1) are rejected
-#   - the tag must be reachable from main
-# The second guard is stricter than sthomas.ch's prod, which only checks the
-# first. With no dev environment to catch a bad tag, it is worth having; drop
-# the `git merge-base` step if you would rather ship arbitrary tags.
+#   push of a calver tag  -> deploys automatically, but ONLY if the tag is a
+#                            final release and is reachable from main. A
+#                            pre-release tag (v2026.0.16-rc.1) or a tag off a
+#                            side branch is SKIPPED, not failed - tagging an rc
+#                            is a normal thing to do and should not go red.
+#
+#   Run workflow (manual) -> deploys whatever tag you name, pre-release
+#                            included. This is the deliberate override path, so
+#                            it trusts you and only warns in the log about
+#                            whatever is unusual about the tag.
+#
+# The tag filter below is a glob, so `[0-9]*` also matches `16-rc.1`; the
+# pre-release check therefore has to happen in the gate, not in the filter.
 on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
   workflow_dispatch:
     inputs:
       tag:
-        description: Tag to build and deploy (e.g. v2026.0.16)
+        description: Tag to build and deploy (pre-release tags are allowed here)
         required: true
         type: string
 
@@ -27,44 +36,74 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       proceed: ${{ steps.check.outputs.proceed }}
+      ref: ${{ steps.check.outputs.ref }}
       version: ${{ steps.check.outputs.version }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ inputs.tag || github.ref_name }}
           fetch-depth: 0
+
       - id: check
         env:
-          REF: ${{ inputs.tag }}
+          REF: ${{ inputs.tag || github.ref_name }}
+          MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
+          set -uo pipefail
+          echo "ref=$REF"         >> "$GITHUB_OUTPUT"
           echo "version=${REF#v}" >> "$GITHUB_OUTPUT"
-          case "$REF" in
-            *-*)
-              echo "proceed=false" >> "$GITHUB_OUTPUT"
-              echo "::error::$REF is a pre-release tag - not deploying to prod"
-              exit 1 ;;
-          esac
+
+          # A pre-release tag carries a hyphen after the version: v2026.0.16-rc.1
+          prerelease=false
+          case "$REF" in *-*) prerelease=true ;; esac
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
+          on_main=false
           git fetch origin main --quiet
-          if git merge-base --is-ancestor HEAD origin/main; then
+          if git merge-base --is-ancestor HEAD origin/main; then on_main=true; fi
+
+          echo "tag=$REF prerelease=$prerelease reachable-from-main=$on_main manual=$MANUAL"
+
+          if [ "$MANUAL" = true ]; then
+            # Deliberate run: ship it, but make anything unusual visible.
+            if [ "$prerelease" = true ]; then
+              echo "::warning::$REF is a pre-release - deploying to prod because this run is manual"
+            fi
+            if [ "$on_main" = false ]; then
+              echo "::warning::$REF is not reachable from main - deploying to prod anyway because this run is manual"
+            fi
             echo "proceed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
-            echo "::error::$REF is not reachable from main - not deploying to prod"
-            exit 1
+            exit 0
           fi
+
+          # Automatic run: strict, and skip quietly rather than failing.
+          if [ "$prerelease" = true ]; then
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$REF is a pre-release - not auto-deploying. Use Run workflow to ship it."
+            exit 0
+          fi
+          if [ "$on_main" = false ]; then
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::$REF is not reachable from main - not auto-deploying."
+            exit 0
+          fi
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
 
   lint-build:
     needs: gate
+    if: needs.gate.outputs.proceed == 'true'
     uses: ./.github/workflows/lint-build.yml
 
   build:
     needs: [gate, lint-build]
+    if: needs.gate.outputs.proceed == 'true'
     runs-on: ubuntu-latest
     environment: Prod
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ needs.gate.outputs.ref }}
 
       - name: Build & push
         uses: ./.github/actions/docker-build-push
@@ -72,18 +111,21 @@ jobs:
           image-name: ${{ secrets.DOCKERHUB_USERNAME }}/eth-planner
           dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub-token: ${{ secrets.DOCKERHUB_TOKEN }}
+          # `latest` must keep pointing at the newest FINAL release - a manual
+          # pre-release deploy tags only its own version.
           tags: |
             type=raw,value=${{ needs.gate.outputs.version }}
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ needs.gate.outputs.prerelease == 'false' }}
 
   deploy:
     needs: [gate, build]
+    if: needs.gate.outputs.proceed == 'true'
     runs-on: ubuntu-latest
     environment: Prod
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ needs.gate.outputs.ref }}
 
       - name: Image ref
         env:

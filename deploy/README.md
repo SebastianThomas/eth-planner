@@ -41,18 +41,31 @@ attaches and matches on `Host`.
 
 ## Workflow
 
-`.github/workflows/deploy.yml` — **manual only**, prod only.
+`.github/workflows/deploy.yml` — prod only, two ways in.
 
-Run it from the Actions tab and give it a tag (`v2026.0.16`). A tag push on its
-own deploys nothing. Two guards run before anything is built:
+**Push a calver tag** and it deploys automatically, provided the tag is a final
+release *and* is reachable from `main`. Anything else is **skipped, not failed** —
+tagging an `-rc.1` is a normal thing to do and should not turn the run red.
 
-- pre-release tags (`v2026.0.16-rc.1`) are rejected
-- the tag must be reachable from `main`
+**Run workflow** (manual) deploys whatever tag you name, **pre-releases
+included**. This is the deliberate override path, so it does not block: it warns
+in the log about whatever is unusual about the tag and ships it.
 
-The second guard is stricter than `sthomas.ch`'s prod, which only rejects
-pre-releases. There, a bad tag would surface in dev first; here there is no dev
-environment, so the tag going to prod is the only one that ever runs. Drop the
-`git merge-base` step in `deploy.yml` if you would rather ship arbitrary tags.
+| | pre-release | reachable from `main` | result |
+|---|---|---|---|
+| tag push | no | yes | deploys |
+| tag push | no | no | skipped, notice |
+| tag push | yes | either | skipped, notice |
+| manual | no | yes | deploys |
+| manual | no | no | deploys, warning |
+| manual | yes | either | deploys, warning |
+
+Note the tag filter is a glob, so `v2026.0.16-rc.1` *does* start the workflow —
+the pre-release decision is made in the `gate` job, not by the filter.
+
+The `latest` image tag only moves for a final release. A manual pre-release
+deploy pushes its own version tag and leaves `latest` pointing at the last real
+release.
 
 `lint-build` gates every run and every push. Since the app has no build step, it
 instead `node --check`s every JS file, runs `scripts/validate-programmes.mjs`,
