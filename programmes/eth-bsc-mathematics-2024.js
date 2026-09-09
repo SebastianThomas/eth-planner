@@ -9,7 +9,8 @@
  * still mentions one; that page is out of date. The nearest element is a 4-ECTS
  * Semesterarbeit inside the seminars category.
  *
- * Catalogue not yet populated — credit rules only.
+ * Compulsory catalogue: ETH VVZ, Autumn and Spring Semester 2026. Assessment
+ * modes were checked on each course's LEISTUNGSKONTROLLE page on 2026-09-09.
  */
 registerProgramme({
   id: "eth-bsc-mathematics-2024",
@@ -17,7 +18,10 @@ registerProgramme({
   institution: "ETH Zürich",
   regulations: "Studienreglement 2024 (RSETHZ 323.1.0900.14)",
   degreeTitle: "Bachelor of Science ETH in Mathematics",
-  sources: ["Studienreglement 2024, RSETHZ 323.1.0900.14 (credit table Art. 38)"],
+  sources: [
+    "Studienreglement 2024, RSETHZ 323.1.0900.14 (credit table Art. 38)",
+    "ETH course catalogue (VVZ), Autumn Semester 2026 and Spring Semester 2026",
+  ],
 
   totalRequired: 180,
   maxAccreditable: 190,
@@ -83,5 +87,71 @@ registerProgramme({
     ],
   },
 
-  catalogue: [],
+  catalogue: [
+    // Basisjahr: the fixed 51-ECTS list in the 2026 VVZ programme tree.
+    { id: "401-1261-07L", title: "Analysis I: One Variable", ects: 10, sem: "HS", exam: "written", mandatory: true, vvz: 203950,
+      examDetail: "Written session examination, 150 minutes", counts: [{ cat: "Compulsory courses, first year (Basisjahr)" }] },
+    { id: "402-1701-00L", title: "Physics I", ects: 7, sem: "HS", exam: "written", mandatory: true, vvz: 202960,
+      examDetail: "Written session examination, 180 minutes", counts: [{ cat: "Compulsory courses, first year (Basisjahr)" }] },
+    { id: "252-0847-00L", title: "Computer Science", ects: 5, sem: "HS", exam: "written", mandatory: true, vvz: 203615,
+      examDetail: "Written session examination, 120 minutes", counts: [{ cat: "Compulsory courses, first year (Basisjahr)" }] },
+    { id: "401-1151-00L", title: "Linear Algebra I", ects: 7, sem: "HS", exam: "written", mandatory: true, vvz: 203093,
+      examDetail: "Part of the Linear Algebra I/II annual course; written session examination, 210 minutes", counts: [{ cat: "Compulsory courses, first year (Basisjahr)" }] },
+    { id: "401-1152-02L", title: "Linear Algebra II", ects: 7, sem: "FS", exam: "written", mandatory: true, vvz: 199246,
+      examDetail: "Part of the Linear Algebra I/II annual course; written session examination, 210 minutes", counts: [{ cat: "Compulsory courses, first year (Basisjahr)" }] },
+    { id: "401-1262-07L", title: "Analysis II: Several Variables", ects: 10, sem: "FS", exam: "written", mandatory: true, vvz: 198848,
+      examDetail: "Written session examination, 180 minutes", counts: [{ cat: "Compulsory courses, first year (Basisjahr)" }] },
+    { id: "401-1032-00L", title: "Basic Structures", ects: 5, sem: "FS", exam: "written", mandatory: true, vvz: 198199,
+      examDetail: "Written session examination, 120 minutes", counts: [{ cat: "Compulsory courses, first year (Basisjahr)" }] },
+
+    // Second and third year: fixed 51 ECTS, including Mathematical Writing.
+    { id: "401-2303-00L", title: "Complex Analysis", ects: 6, sem: "HS", exam: "written", mandatory: true, vvz: 203391,
+      examDetail: "Written session examination, 120 minutes", counts: [{ cat: "Compulsory courses, later years" }] },
+    { id: "401-2003-00L", title: "Algebra I", ects: 7, sem: "HS", exam: "written", mandatory: true, vvz: 203291,
+      examDetail: "Written session examination, 120 minutes", counts: [{ cat: "Compulsory courses, later years" }] },
+    { id: "401-2653-21L", title: "Numerical Analysis I", ects: 7, sem: "HS", exam: "written", mandatory: true, vvz: 204716,
+      examDetail: "Written session examination, 180 minutes", counts: [{ cat: "Compulsory courses, later years" }] },
+    { id: "401-2283-00L", title: "Analysis III (Measure Theory)", ects: 6, sem: "HS", exam: "oral", mandatory: true, vvz: 204447,
+      examDetail: "Oral session examination, 20 minutes", counts: [{ cat: "Compulsory courses, later years" }] },
+    { id: "401-2464-00L", title: "Analysis IV (Fourier Theory and Hilbert Spaces)", ects: 6, sem: "FS", exam: "written", mandatory: true, vvz: 198581,
+      examDetail: "Written session examination, 180 minutes", counts: [{ cat: "Compulsory courses, later years" }] },
+    { id: "401-2554-00L", title: "Topology", ects: 7, sem: "FS", exam: "written", mandatory: true, vvz: 197853,
+      examDetail: "Written session examination, 120 minutes", counts: [{ cat: "Compulsory courses, later years" }] },
+    { id: "401-2604-00L", title: "Probability and Statistics", ects: 8, sem: "FS", exam: "written", mandatory: true, vvz: 198153,
+      examDetail: "Written session examination, 180 minutes", counts: [{ cat: "Compulsory courses, later years" }] },
+    { id: "401-3005-00L", title: "Mathematical Writing", ects: 4, sem: "HS", exam: "none", passFail: true, mandatory: true, vvz: 202888,
+      examDetail: "Ungraded semester performance", counts: [{ cat: "Compulsory courses, later years" }] },
+
+    // Explicit 2026 VVZ lists. Unknown assessments stay unknown until their
+    // LEISTUNGSKONTROLLE pages have been checked individually.
+    { id: "402-2883-00L", title: "Physics III", ects: 7, sem: "HS", exam: "?", vvz: 202573,
+      counts: [{ cat: "Complementary courses (Ergänzungsfächer)" }] },
+    { id: "402-2203-01L", title: "Classical Mechanics", ects: 7, sem: "HS", exam: "?", vvz: 203029,
+      counts: [{ cat: "Complementary courses (Ergänzungsfächer)" }] },
+    { id: "252-0057-00L", title: "Theoretical Computer Science", ects: 7, sem: "HS", exam: "written", vvz: 204552,
+      examDetail: "Written session examination, 180 minutes (verified in the BSc Computer Science catalogue)", counts: [{ cat: "Complementary courses (Ergänzungsfächer)" }] },
+    { id: "227-0045-00L", title: "Signals and Systems I", ects: 4, sem: "HS", exam: "?", vvz: 203602,
+      counts: [{ cat: "Complementary courses (Ergänzungsfächer)" }] },
+    { id: "402-1782-00L", title: "Physics II", ects: 7, sem: "FS", exam: "?", vvz: 198868,
+      note: "Not eligible here if Physics II was already credited through the transferred Basisprüfung block 2.", counts: [{ cat: "Complementary courses (Ergänzungsfächer)" }] },
+    { id: "252-0002-00L", title: "Data Structures and Algorithms", ects: 8, sem: "FS", exam: "?", vvz: 197973,
+      counts: [{ cat: "Complementary courses (Ergänzungsfächer)" }] },
+
+    { id: "401-2534-00L", title: "Geometry", ects: 6, sem: "FS", exam: "?", vvz: 199789,
+      counts: [{ cat: "Compulsory electives (Wahlpflichtfächer)" }] },
+    { id: "401-2004-00L", title: "Algebra II", ects: 6, sem: "FS", exam: "?", vvz: 198143,
+      counts: [{ cat: "Compulsory electives (Wahlpflichtfächer)" }] },
+    { id: "401-3374-23L", title: "Dynamical Systems and Ergodic Theory (University of Zurich)", ects: 9, sem: "FS", exam: "?", vvz: 202259,
+      counts: [{ cat: "Compulsory electives (Wahlpflichtfächer)" }] },
+    { id: "401-2374-24L", title: "Dynamical Systems and Ergodic Theory", ects: 5, sem: "FS", exam: "?", vvz: 199643,
+      counts: [{ cat: "Compulsory electives (Wahlpflichtfächer)" }] },
+    { id: "401-2334-00L", title: "Mathematical Methods of Physics II", ects: 6, sem: "FS", exam: "?", vvz: 198495,
+      counts: [{ cat: "Compulsory electives (Wahlpflichtfächer)" }] },
+    { id: "401-2654-00L", title: "Numerical Analysis II", ects: 6, sem: "FS", exam: "?", vvz: 197857,
+      counts: [{ cat: "Compulsory electives (Wahlpflichtfächer)" }] },
+    { id: "401-3052-05L", title: "Introduction to Graph Theory", ects: 5, sem: "FS", exam: "?", vvz: 198280,
+      counts: [{ cat: "Compulsory electives (Wahlpflichtfächer)" }] },
+    { id: "401-2684-00L", title: "Mathematics of Signals, Networks, and Learning", ects: 6, sem: "FS", exam: "?", vvz: 197556,
+      counts: [{ cat: "Compulsory electives (Wahlpflichtfächer)" }] },
+  ],
 });
