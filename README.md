@@ -1,5 +1,7 @@
 # Study Planner
 
+Try it out at [eth-planner.sthomas.ch](https://eth-planner.sthomas.ch/).
+
 A single-page planner for degree programmes with credit-category rules — the sort where you must
 collect *N* credits here, *M* there, and a course may count in one category but not two.
 
