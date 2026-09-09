@@ -140,6 +140,7 @@
     const t = {
       earned: sum(EARNED), provisional: sum(PROVISIONAL), outstanding: sum(OUTSTANDING),
     };
+    t.now = sum(["Registered"]); t.later = sum(["Fixed"]);
     t.settled = t.earned + t.provisional;
     t.live = t.settled + t.outstanding;
     // kept for the older call sites
@@ -366,7 +367,8 @@
 
   function renderCategories() {
     const rows = [];
-    const push = (key, req, done, fixed, live, note, indent) => {
+    const push = (key, req, done, now, later, live, note, indent) => {
+      const fixed = done + now + later;
       const mf = Math.max(0, req - fixed), ml = Math.max(0, req - live);
       const me = Math.max(0, req - done);
       const pill = !req ? `<span class="pill unk">no minimum</span>`
@@ -376,21 +378,24 @@
         : `<span class="pill short">${mf} ECTS needed · ${ml} unplanned</span>`;
       rows.push(`<tr><td${indent ? ' style="padding-left:22px"' : ""}>${indent ? `<em>${esc(key)}</em>` : `<strong>${esc(key)}</strong>`}</td>
         <td class="num">${done || "&ndash;"}</td>
-        <td class="num">${fixed - done || "&ndash;"}</td>
+        <td class="num">${now || "&ndash;"}</td>
+        <td class="num">${later || "&ndash;"}</td>
         <td class="num${req && mf > 0 ? (ml > 0 ? " credit-short" : " credit-pending") : ""}">${req || "&ndash;"}</td>
         <td>${pill}</td><td class="cnote">${esc(note || "")}</td></tr>`);
     };
     for (const c of categoryList()) {
       if (c.key === "(not counted)") continue;
-      push(c.key, c.req, sumBy(TIER.done, c.key), sumBy(TIER.fixed, c.key), sumBy(TIER.live, c.key), c.note, false);
+      push(c.key, c.req, sumBy(EARNED, c.key), sumBy(["Registered"], c.key),
+           sumBy(["Fixed"], c.key), sumBy(TIER.live, c.key), c.note, false);
       for (const g of prog.groups || []) {
         if (g.members[g.members.length - 1] === c.key) {
-          push(g.key, g.req, groupSum(TIER.done, g), groupSum(TIER.fixed, g), groupSum(TIER.live, g), g.note, true);
+          push(g.key, g.req, groupSum(EARNED, g), groupSum(["Registered"], g),
+               groupSum(["Fixed"], g), groupSum(TIER.live, g), g.note, true);
         }
       }
     }
     const t = totals();
-    push("TOTAL", prog.totalRequired, t.earned, t.settled, t.live,
+    push("TOTAL", prog.totalRequired, t.earned, t.now, t.later, t.live,
       prog.maxAccreditable ? `At most ${prog.maxAccreditable} ECTS may be accredited.` : "", false);
     $("#cat-table tbody").innerHTML = rows.join("");
   }
