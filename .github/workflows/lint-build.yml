@@ -30,3 +30,8 @@ jobs:
       # Also cross-checks index.html against programmes/ in both directions.
       - name: Validate programme definitions
         run: node scripts/validate-programmes.mjs
+
+      # MSc CS is the most-used programme; its numbers are pinned so that adding
+      # other programmes cannot silently move them.
+      - name: MSc CS regression
+        run: node scripts/regression-cs.mjs

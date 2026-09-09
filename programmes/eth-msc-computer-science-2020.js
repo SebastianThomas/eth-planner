@@ -74,6 +74,17 @@ registerProgramme({
       note: "Core and Elective together must reach 26 ECTS, of which at least 16 core." },
   ],
 
+  // Study Guide 2.2: "The accumulated minimum credits from all categories amount to 102.
+  // The remaining 18 credit points can be obtained from all categories, except the seminar
+  // and Master's thesis."
+  remainder: {
+    credits: 18,
+    allowedCategories: [
+      "Major - Core", "Major - Elective", "Minor", "Inter-Focus Courses",
+      "Practical Work", "Science in Perspective", "Free Electives",
+    ],
+  },
+
   rules: {
     maxEctsPerSemester: 34,
     maxOralsPerSemester: 1,

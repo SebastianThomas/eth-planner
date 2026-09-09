@@ -8,7 +8,7 @@
   "use strict";
 
   const STORAGE_KEY = "study-planner.v1";
-  const SCHEMA = 1;
+  const SCHEMA = 2;
 
   // Three-way accounting.
   //   earned      credits actually awarded - status Completed
@@ -37,18 +37,34 @@
 
   let programmes = (window.PLANNER_PROGRAMMES || []).slice();
   let prog = null;                 // active programme definition
-  let state = null;                // { programmeId, profile, preferences, plan, customProgrammes }
+  let state = null;                // { programmeId, workspaces: { [programmeId]: { profile, preferences, plan } } }
   let showInactive = false;
 
-  function blankState() {
+  function blankWorkspace() {
     return {
-      schema: SCHEMA,
-      programmeId: programmes.length ? programmes[0].id : null,
       profile: { name: "", studentId: "", major: "", minor: "", semesters: DEFAULT_SEMESTERS.slice() },
       preferences: { maxEctsPerSemester: null, maxOralsPerSemester: null },
       plan: {},
-      customProgrammes: [],
     };
+  }
+
+  function attachWorkspaceAccessors(s) {
+    for (const key of ["profile", "preferences", "plan"]) {
+      Object.defineProperty(s, key, { configurable: true,
+        get() { return s.workspaces[s.programmeId][key]; },
+        set(value) { s.workspaces[s.programmeId][key] = value; } });
+    }
+    return s;
+  }
+
+  function blankState() {
+    const programmeId = programmes.length ? programmes[0].id : null;
+    return attachWorkspaceAccessors({
+      schema: SCHEMA,
+      programmeId,
+      workspaces: programmeId ? { [programmeId]: blankWorkspace() } : {},
+      customProgrammes: [],
+    });
   }
 
   function load() {
@@ -70,15 +86,23 @@
   function normaliseState(p) {
     const s = blankState();
     s.programmeId = p.programmeId || s.programmeId;
-    Object.assign(s.profile, p.profile || {});
-    if (!Array.isArray(s.profile.semesters) || !s.profile.semesters.length) {
-      s.profile.semesters = DEFAULT_SEMESTERS.slice();
-    }
-    Object.assign(s.preferences, p.preferences || {});
-    s.plan = (p.plan && typeof p.plan === "object") ? p.plan : {};
+    s.workspaces = (p.workspaces && typeof p.workspaces === "object") ? p.workspaces : {};
+    // Schema 1 migration: preserve the old single plan under its active programme.
+    if (!p.workspaces && s.programmeId) s.workspaces[s.programmeId] = {
+      profile: p.profile || {}, preferences: p.preferences || {},
+      plan: (p.plan && typeof p.plan === "object") ? p.plan : {},
+    };
     s.customProgrammes = Array.isArray(p.customProgrammes) ? p.customProgrammes : [];
     for (const def of s.customProgrammes) registerCustom(def);
-    return s;
+    for (const id of Object.keys(s.workspaces)) {
+      const raw = s.workspaces[id] || {}, clean = blankWorkspace();
+      Object.assign(clean.profile, raw.profile || {});
+      if (!Array.isArray(clean.profile.semesters) || !clean.profile.semesters.length) clean.profile.semesters = DEFAULT_SEMESTERS.slice();
+      Object.assign(clean.preferences, raw.preferences || {});
+      clean.plan = (raw.plan && typeof raw.plan === "object") ? raw.plan : {};
+      s.workspaces[id] = clean;
+    }
+    return attachWorkspaceAccessors(s);
   }
 
   function registerCustom(def) {
@@ -89,7 +113,10 @@
 
   function activate() {
     prog = programmes.find(p => p.id === state.programmeId) || programmes[0] || null;
-    if (prog) state.programmeId = prog.id;
+    if (prog) {
+      state.programmeId = prog.id;
+      if (!state.workspaces[prog.id]) state.workspaces[prog.id] = blankWorkspace();
+    }
   }
 
   /* ------------------------------------------------------------ helpers */
@@ -114,6 +141,18 @@
   }
 
   function isEligible(course) { return eligibleCats(course).length > 0; }
+
+  function ensureMandatory() {
+    if (!prog) return;
+    for (const c of prog.catalogue.filter(x => x.mandatory && isEligible(x))) {
+      const category = eligibleCats(c)[0];
+      const guess = c.sem === "HS" ? state.profile.semesters.find(s => /^HS/i.test(s))
+                  : c.sem === "FS" ? state.profile.semesters.find(s => /^FS/i.test(s)) : null;
+      if (!state.plan[c.id]) state.plan[c.id] = { status: "Open", category, semester: guess || UNDECIDED };
+      state.plan[c.id].category = category;
+      if (["Considering", "Waitlist"].includes(state.plan[c.id].status)) state.plan[c.id].status = "Open";
+    }
+  }
 
   function ectsOf(id) {
     const e = state.plan[id] && state.plan[id].ects;
@@ -158,11 +197,19 @@
     return typeof g === "number" && Number.isFinite(g) ? g : null;
   }
 
-  /** Credit-weighted average, the way ETH computes the final GPA. */
+  /** Categories the final grade averages over. null = every category. */
+  function gradeScope() {
+    const g = prog && prog.gradeAverage;
+    return g && Array.isArray(g.categories) && g.categories.length ? g.categories : null;
+  }
+
+  /** Credit-weighted average, the way the regulations compute the final grade. */
   function gpa(filter) {
     let num = 0, den = 0, counted = 0, ungraded = 0;
+    const scope = gradeScope();
     for (const e of entries(COUNTED)) {
       if (filter && !filter(e)) continue;
+      if (scope && !scope.includes(e.category)) continue;   // outside the graded categories
       if (e.course.passFail) continue;          // pass/fail never enters an average
       const g = gradeOf(e.id);
       if (g === null) { if (EARNED.includes(e.status)) ungraded++; continue; }
@@ -252,6 +299,22 @@
     const undec = entries(TIER.live).filter(e => e.semester === UNDECIDED);
     if (undec.length) out.push({ level: "warn", title: "Unscheduled", text: `${undec.length} item(s) have no semester yet.` });
 
+    if (prog.remainder && Array.isArray(prog.remainder.allowedCategories)) {
+      const allowed = prog.remainder.allowedCategories;
+      const stray = [];
+      for (const c of categoryList()) {
+        if (c.key === "(not counted)" || allowed.includes(c.key)) continue;
+        const surplus = sumBy(COUNTED, c.key) - (c.req || 0);
+        if (surplus > 0) stray.push(`${surplus} in ${c.key}`);
+      }
+      if (stray.length) {
+        out.push({ level: "warn", title: "Credits that may not count",
+          text: `The ${prog.remainder.credits} credits topping you up to ${prog.totalRequired} may only be `
+              + `earned in: ${allowed.join(", ")}. You have surplus outside that — ${stray.join("; ")} — `
+              + `which the regulations may not count toward the total.` });
+      }
+    }
+
     const parked = Object.keys(state.plan).filter(id =>
       CAT[id] && ["Considering", "Waitlist"].includes(state.plan[id].status));
     if (parked.length) {
@@ -301,6 +364,7 @@
   function render() {
     if (!prog) return;
     CAT = byId();
+    ensureMandatory();
     renderSetup();
     renderCards();
     renderAlerts();
@@ -494,14 +558,14 @@
           : ectsOf(id)}</td>
         <td>${examPill(c.exam)}${c.periodicity && PERIODICITY[c.periodicity] && PERIODICITY[c.periodicity].risk
           ? " " + periodicityPill(c.periodicity) : ""}</td>
-        <td>${select(opts, p.category, "cat", id, allowed)}</td>
+        <td>${select(opts, p.category, "cat", id, allowed, c.mandatory)}</td>
         <td>${select(semesters(), p.semester, "sem", id)}</td>
-        <td>${select(STATUSES, p.status, "status", id)}</td>
+        <td>${select(STATUSES, p.status, "status", id, null, false, c.mandatory ? ["Considering", "Waitlist"] : [])}</td>
         <td class="num">${c.passFail
           ? '<span class="pill unk">pass/fail</span>'
           : `<input class="inp grade" type="number" min="${GRADE_MIN}" max="${GRADE_MAX}" step="${GRADE_STEP}"
                value="${gradeOf(id) === null ? "" : gradeOf(id)}" placeholder="&ndash;" data-grade="${esc(id)}">`}</td>
-        <td><button class="iconbtn" data-remove="${esc(id)}" title="remove">&times;</button></td></tr>`;
+        <td><button class="iconbtn" data-remove="${esc(id)}" title="${c.mandatory ? "required course" : "remove"}" ${c.mandatory ? "disabled" : ""}>&times;</button></td></tr>`;
     }).join("");
   }
 
@@ -526,7 +590,11 @@
         <td>${examPill(c.exam)} ${periodicityPill(c.periodicity)}</td>
         <td class="cats">${cats.length ? cats.map(esc).join(" &middot; ") : '<em>not available with your major/minor</em>'}</td>
         <td><button class="addbtn" data-add="${esc(c.id)}" ${inPlan || !cats.length ? "disabled" : ""}>${inPlan ? "in plan" : "add"}</button></td></tr>`;
-    }).join("") || `<tr><td colspan="6" class="cnote">Nothing matches those filters.</td></tr>`;
+    }).join("") || `<tr><td colspan="6" class="cnote">${prog.catalogue.length
+        ? "Nothing matches those filters."
+        : "This programme has its credit rules defined but no course catalogue yet. "
+          + "You can still add courses by editing its programme file, or switch programme above."
+      }</td></tr>`;
   }
 
   function renderFoot() {
@@ -537,9 +605,16 @@
         ${prog.degreeTitle ? "Awards " + esc(prog.degreeTitle) + "." : ""}</p>
        ${src ? `<p><strong>Sources.</strong> ${src}.</p>` : ""}
        ${notes ? `<ul>${notes}</ul>` : ""}
-       <p>Assessment marked <span class="pill unk">?</span> has not been verified. Course details can change until a
-          semester begins &mdash; always check the official catalogue before relying on one. This is a planning aid,
-          not an authoritative record.</p>
+       ${gradeScope() ? `<p><strong>Grade average.</strong> This programme averages only:
+          ${gradeScope().map(esc).join(", ")}. Other categories are excluded.</p>` : ""}
+       ${prog.remainder ? `<p><strong>Remainder.</strong> ${prog.remainder.credits} of the
+          ${prog.totalRequired} credits are free, but may only be earned in:
+          ${prog.remainder.allowedCategories.map(esc).join(", ")}.</p>` : ""}
+       <p><strong>No guarantees.</strong> This page is not a source of truth. It reproduces published
+          data on a best-effort basis and will drift out of date; assessment marked
+          <span class="pill unk">?</span> was never verified at all, and details can change right up to
+          the start of a semester. The binding sources are the official course catalogue, the programme
+          regulations and your studies administration office &mdash; check them before you act on anything here.</p>
        <p>Your plan is kept in this browser only and travels in the file you download. Uploading a plan replaces what is stored here.</p>`;
   }
 
@@ -560,10 +635,10 @@
   }
 
   /** `enabled` (optional) lists the values that may be picked; the rest render disabled. */
-  function select(options, value, kind, id, enabled) {
-    return `<select class="inp" data-${kind}="${esc(id)}">` +
+  function select(options, value, kind, id, enabled, disabled, blocked) {
+    return `<select class="inp" data-${kind}="${esc(id)}"${disabled ? " disabled" : ""}>` +
       options.map(o => {
-        const off = enabled && !enabled.includes(o) && o !== value;
+        const off = (enabled && !enabled.includes(o) && o !== value) || (blocked || []).includes(o);
         return `<option${o === value ? " selected" : ""}${off ? " disabled" : ""}>${esc(o)}</option>`;
       }).join("") + `</select>`;
   }
@@ -604,7 +679,7 @@
       }
     }
     else if (t.id === "show-inactive") showInactive = t.checked;
-    else if (t.id === "f-programme") { state.programmeId = t.value; state.plan = {}; activate(); }
+    else if (t.id === "f-programme") { state.programmeId = t.value; activate(); }
     else if (t.id === "f-name") state.profile.name = t.value.trim();
     else if (t.id === "f-sid") state.profile.studentId = t.value.trim();
     else if (t.id === "f-major") state.profile.major = t.value;
@@ -638,7 +713,7 @@
       render(); toast(`Added ${c.title}`); return;
     }
     const rm = e.target.closest("[data-remove]");
-    if (rm) { delete state.plan[rm.dataset.remove]; render(); }
+    if (rm) { if (!CAT[rm.dataset.remove].mandatory) delete state.plan[rm.dataset.remove]; render(); }
   });
 
   /* ------------------------------------------------------------ json io */
@@ -658,9 +733,7 @@
       savedAt: new Date().toISOString(),
       programmeId: state.programmeId,
       programmeName: prog ? prog.name : null,
-      profile: state.profile,
-      preferences: state.preferences,
-      plan: state.plan,
+      workspaces: state.workspaces,
       customProgrammes: state.customProgrammes,
     };
   }
@@ -702,8 +775,8 @@
   $("#file-import").addEventListener("change", ev => {
     const f = ev.target.files && ev.target.files[0];
     if (f) readJson(f, data => {
-      if (!data || typeof data !== "object" || !data.plan || typeof data.plan !== "object") {
-        toast('That file has no "plan" object'); return;
+      if (!data || typeof data !== "object" || (!data.workspaces && (!data.plan || typeof data.plan !== "object"))) {
+        toast('That file has no programme workspaces or plan'); return;
       }
       state = normaliseState(data);
       activate();
@@ -738,7 +811,7 @@
       }
       registerCustom(def);
       state.customProgrammes = state.customProgrammes.filter(p => p.id !== def.id).concat([def]);
-      state.programmeId = def.id; state.plan = {};
+      state.programmeId = def.id;
       activate(); render();
       toast(`Loaded programme "${def.name || def.id}"`);
     });
@@ -753,14 +826,15 @@
   }
 
   $("#btn-clear").addEventListener("click", () => {
-    const n = Object.keys(state.plan).length;
-    const bits = [`${n} course${n === 1 ? "" : "s"}`];
-    if (state.profile.name) bits.push("your name");
-    if (state.profile.studentId) bits.push("your student number");
-    if (state.profile.major || state.profile.minor) bits.push("your major and minor");
-    const graded = Object.values(state.plan).filter(v => typeof v.grade === "number").length;
+    const workspaces = Object.values(state.workspaces);
+    const n = workspaces.reduce((sum, w) => sum + Object.keys(w.plan || {}).length, 0);
+    const bits = [`${n} course${n === 1 ? "" : "s"} across ${workspaces.length} programme workspace${workspaces.length === 1 ? "" : "s"}`];
+    if (workspaces.some(w => w.profile && w.profile.name)) bits.push("your saved names");
+    if (workspaces.some(w => w.profile && w.profile.studentId)) bits.push("your saved student numbers");
+    if (workspaces.some(w => w.profile && (w.profile.major || w.profile.minor))) bits.push("your major and minor choices");
+    const graded = workspaces.reduce((sum, w) => sum + Object.values(w.plan || {}).filter(v => typeof v.grade === "number").length, 0);
     if (graded) bits.push(`${graded} grade${graded === 1 ? "" : "s"}`);
-    $("#clear-detail").textContent = n || state.profile.name
+    $("#clear-detail").textContent = n || workspaces.some(w => w.profile && (w.profile.name || w.profile.studentId))
       ? `This removes ${bits.join(", ")} from this browser.`
       : "There is nothing stored yet.";
 

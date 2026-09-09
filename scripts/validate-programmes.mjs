@@ -21,6 +21,21 @@ const MUST_NOT_SHIP = new Set(["template.js"]);
 const EXAM_MODES = new Set(["oral", "written", "none", "?"]);
 const SEMESTERS = new Set(["HS", "FS", "BOTH", "NA"]);
 
+/* Sum of the minima a plan must actually satisfy. A group minimum can exceed the sum of
+   its members' own minima (e.g. Major total 26 vs Core 16 + Elective 0); that excess is a
+   genuine extra requirement, so count it once. */
+function effectiveMinima(def, cats) {
+  let n = (def.categories || []).reduce((a, c) => a + (c.req || 0), 0);
+  for (const g of def.groups || []) {
+    const members = (g.members || []).reduce((a, m) => {
+      const c = (def.categories || []).find(x => x.key === m);
+      return a + (c ? (c.req || 0) : 0);
+    }, 0);
+    n += Math.max(0, (g.req || 0) - members);
+  }
+  return n;
+}
+
 const problems = [];
 const warnings = [];
 const fail = (m) => problems.push(m);
@@ -79,6 +94,41 @@ for (const { file, def } of programmes) {
       if (!cats.has(m)) fail(where(`group "${g.key}" references unknown category "${m}"`));
     }
   }
+  // remainder: the free credits topping the plan up to the total, restricted by category
+  if (def.remainder) {
+    const r = def.remainder;
+    if (typeof r.credits !== "number") fail(where("remainder.credits must be a number"));
+    if (!Array.isArray(r.allowedCategories) || !r.allowedCategories.length) {
+      fail(where("remainder.allowedCategories must be a non-empty array"));
+    } else {
+      for (const k of r.allowedCategories) {
+        if (!cats.has(k)) fail(where(`remainder.allowedCategories references unknown category "${k}"`));
+      }
+    }
+    const minima = effectiveMinima(def, cats);
+    if (typeof r.credits === "number" && minima + r.credits !== def.totalRequired) {
+      fail(where(`category minima (${minima}) + remainder (${r.credits}) = ${minima + r.credits}, `
+               + `but totalRequired is ${def.totalRequired}`));
+    }
+  } else {
+    const minima = effectiveMinima(def, cats);
+    if (minima < def.totalRequired) {
+      warn(where(`category minima sum to ${minima} but the total is ${def.totalRequired} — `
+               + `${def.totalRequired - minima} credits are unaccounted for. Add a remainder block.`));
+    }
+  }
+
+  // gradeAverage: which categories the final grade averages over
+  if (def.gradeAverage) {
+    if (!Array.isArray(def.gradeAverage.categories)) {
+      fail(where("gradeAverage.categories must be an array"));
+    } else {
+      for (const k of def.gradeAverage.categories) {
+        if (!cats.has(k)) fail(where(`gradeAverage references unknown category "${k}"`));
+      }
+    }
+  }
+
   for (const r of (def.rules && def.rules.atMostOne) || []) {
     if (!cats.has(r.category)) fail(where(`rules.atMostOne references unknown category "${r.category}"`));
   }
@@ -100,6 +150,7 @@ for (const { file, def } of programmes) {
     if (!SEMESTERS.has(c.sem)) fail(`${at} has a bad sem value: ${c.sem}`);
     if (!EXAM_MODES.has(c.exam)) fail(`${at} has a bad exam value: ${c.exam}`);
     if (c.exam === "?") unverified++;
+    if (c.mandatory !== undefined && c.mandatory !== true) fail(`${at} mandatory must be true when present`);
 
     if (c.flexEcts) {
       const [lo, hi] = c.flexEcts;
@@ -114,6 +165,9 @@ for (const { file, def } of programmes) {
       if (!cats.has(t.cat)) fail(`${at} counts towards unknown category "${t.cat}"`);
       if (t.major && !majors.has(t.major)) fail(`${at} references unknown major "${t.major}"`);
       if (t.minor && !minors.has(t.minor)) fail(`${at} references unknown minor "${t.minor}"`);
+    }
+    if (c.mandatory && (c.counts.length !== 1 || c.counts[0].major || c.counts[0].minor)) {
+      fail(`${at} is mandatory but does not have exactly one unconditional category`);
     }
   }
 

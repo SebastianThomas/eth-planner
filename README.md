@@ -5,6 +5,13 @@ Try it out at [eth-planner.sthomas.ch](https://eth-planner.sthomas.ch/).
 A single-page planner for degree programmes with credit-category rules — the sort where you must
 collect *N* credits here, *M* there, and a course may count in one category but not two.
 
+> **Disclaimer — not an official source.** This is an unofficial planning aid, not a source of
+> truth. Course data and credit rules are copied from published university sources on a
+> best-effort basis; they go out of date, some entries are explicitly marked unverified, and
+> mistakes are possible. Always confirm against the official course catalogue, the programme
+> regulations and your studies administration office before making any decision. **No guarantee
+> is given that anything here is correct, complete or current.** Provided as-is, without warranty.
+
 Open `index.html` in a browser. No server, no build step, no dependencies.
 
 ```bash
@@ -35,6 +42,9 @@ Pick your programme, major and minor; add courses; assign each one a **category*
   the whole programme is listed but everything your course cannot count towards is **disabled**, and
   the rule is enforced on assignment too, so it cannot be bypassed. A saved plan that puts a course
   somewhere it no longer belongs is reported rather than silently accepted.
+- **Mandatory courses stay mandatory.** Programme definitions may mark fixed curriculum courses;
+  these are added automatically, locked to their required category, and cannot be removed or moved
+  into an opt-out status. Their completion and semester can still be updated normally.
 - **Personal constraints too.** Set a maximum ECTS and a maximum number of oral exams per semester;
   the semester table flags breaches.
 - **Assessment is first class.** Every course is tagged oral / written / no exam, so you can plan
@@ -46,13 +56,15 @@ Pick your programme, major and minor; add courses; assign each one a **category*
 
 Everything you enter — name, student number, major, minor, semesters, course choices — is stored in
 `localStorage` in your browser and nowhere else. Nothing is sent anywhere.
+Each programme has its own saved workspace, so switching between a Bachelor's and Master's plan
+does not lose either one. The last active programme is restored when the planner reopens.
 
 | Button | Effect |
 |---|---|
-| **Download plan** | writes your plan to a JSON file |
+| **Download plan** | writes all programme workspaces to a JSON file |
 | **Upload plan** | **replaces** what is stored here; unknown courses are skipped and reported, invalid values fall back to safe defaults |
 | **Copy JSON** | the same document, to the clipboard |
-| **Clear** | wipes the plan and profile from this browser — gated by a confirmation dialog that names exactly what will be lost and offers to download a copy first |
+| **Clear** | wipes every programme workspace from this browser — gated by a confirmation dialog that names exactly what will be lost and offers to download a copy first |
 | **Download / Upload programme** | export the active programme definition, or load one of your own |
 
 The repository ships **no plan** — it starts empty. `.gitignore` excludes `*.json`, so a plan you

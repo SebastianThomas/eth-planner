@@ -46,6 +46,21 @@ registerProgramme({
       note: "Core and elective together." },
   ],
 
+  // The credits that top a plan up to `totalRequired` beyond the category minima are
+  // usually NOT free to go anywhere - regulations name where they may be earned.
+  // credits must equal totalRequired minus the sum of category minima (group minima that
+  // exceed their members' minima count too). Omit the block if there is no remainder.
+  remainder: {
+    credits: 46,
+    allowedCategories: ["Major - Core", "Major - Elective", "Minor", "Free Electives"],
+  },
+
+  // Which categories the final grade averages over. Omit to average everything.
+  // e.g. MSc Physics excludes Science in Perspective; RSC averages only three categories.
+  gradeAverage: {
+    categories: ["Major - Core", "Major - Elective", "Minor", "Free Electives", "Thesis"],
+  },
+
   rules: {
     maxEctsPerSemester: 34,              // warn above this
     maxOralsPerSemester: 1,              // warn above this
@@ -71,6 +86,7 @@ registerProgramme({
       examDetail: "Session exam, written 120' (70%) + graded homework (30%)",
       lect: "A. Lecturer",
       vvz: null,                         // ETH course-catalogue id, or null
+      // mandatory: true,                // auto-added and cannot be removed/opted out
       note: "Anything worth remembering about this course.",
       counts: [
         { cat: "Major - Core", major: "Major A" },

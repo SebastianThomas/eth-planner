@@ -27,18 +27,24 @@
  * minors[]           selectable minors (may be empty)
  * categories[]       { key, req, max, note }
  * groups[]           { key, members[], req, note }   e.g. major core + elective >= 26
+ * remainder          { credits, allowedCategories[] } - the credits topping the plan up to
+ *                    totalRequired are restricted to these categories. Optional but common:
+ *                    every ETH programme surveyed so far has one.
+ * gradeAverage       { categories[] } - only these count toward the final grade.
+ *                    Omit to average every graded course.
  * rules              { maxEctsPerSemester, maxOralsPerSemester, atMostOne[] }
  * catalogue[]        courses - see below
  *
  * A course:
  *   id, title, ects, sem ("HS"|"FS"|"BOTH"|"NA"), exam ("oral"|"written"|"none"|"?"),
- *   examDetail?, lect?, vvz?, note?, flexEcts?: [min,max],
+ *   examDetail?, lect?, vvz?, note?, flexEcts?: [min,max], mandatory?: true,
  *   counts: [ { cat, major?, minor? }, ... ]
  *
  * `counts` is the key idea: a course may count in different categories depending on
  * which major or minor you picked. An entry with no `major`/`minor` applies always;
  * one with `major: "X"` applies only if X is your major. The page offers you exactly
  * the categories that your chosen major/minor make available.
+ * `mandatory: true` auto-adds the course, fixes its category and prevents removal.
  */
 
 (function (global) {
