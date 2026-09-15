@@ -153,5 +153,82 @@ registerProgramme({
       counts: [{ cat: "Compulsory electives (Wahlpflichtfächer)" }] },
     { id: "401-2684-00L", title: "Mathematics of Signals, Networks, and Learning", ects: 6, sem: "FS", exam: "?", vvz: 197556,
       counts: [{ cat: "Compulsory electives (Wahlpflichtfächer)" }] },
+
+    // Kernfächer und Wahlfächer (category e, Art. 38): explicit 2026W VVZ list from the
+    // BSc Mathematics "Core Courses and Elective Courses" tree (studiengangAbschnittId 122755).
+    // The 2026S tree exposes the same section headers with no course rows; VVZ evidently
+    // tags Kernfächer/Wahlfächer category membership only under the Autumn query even where
+    // a course's own teaching semester is Spring, so `sem` below reflects each course's own
+    // individually queried VVZ offering semester, not the semester of this listing.
+    // Core courses - pure mathematics:
+    { id: "401-3531-00L", title: "Differential Geometry I", ects: 9, sem: "HS", exam: "written", examDetail: "Written session examination, 180 minutes", vvz: 203420, counts: [{ cat: "Core courses - pure mathematics" }, { cat: "Core courses - further" }] },
+    { id: "401-3461-00L", title: "Functional Analysis I", ects: 9, sem: "HS", exam: "written", examDetail: "Written session examination, 180 minutes", vvz: 204561, counts: [{ cat: "Core courses - pure mathematics" }, { cat: "Core courses - further" }] },
+    { id: "401-3001-61L", title: "Algebraic Topology I", ects: 7, sem: "HS", exam: "written", examDetail: "Written session examination, 180 minutes", vvz: 203671, counts: [{ cat: "Core courses - pure mathematics" }, { cat: "Core courses - further" }] },
+    { id: "401-3132-00L", title: "Commutative Algebra", ects: 9, sem: "HS", exam: "oral", examDetail: "Oral session examination, 30 minutes", vvz: 202837, counts: [{ cat: "Core courses - pure mathematics" }, { cat: "Core courses - further" }] },
+    { id: "401-3111-72L", title: "Number Theory I", ects: 7, sem: "HS", exam: "written", examDetail: "Written session examination, 150 minutes", vvz: 202702, counts: [{ cat: "Core courses - pure mathematics" }, { cat: "Core courses - further" }] },
+    // Core courses - applied mathematics:
+    { id: "401-3651-00L", title: "Numerical Methods for Elliptic and Parabolic Partial Differential Equations", ects: 9, sem: "HS", exam: "oral", examDetail: "Oral session examination, 30 minutes", vvz: 203326, counts: [{ cat: "Core courses - applied mathematics" }, { cat: "Core courses - further" }] },
+    { id: "401-3601-00L", title: "Probability Theory", ects: 9, sem: "HS", exam: "written", examDetail: "Written session examination, 120 minutes", vvz: 204087, counts: [{ cat: "Core courses - applied mathematics" }, { cat: "Core courses - further" }] },
+    { id: "401-3621-00L", title: "Fundamentals of Mathematical Statistics", ects: 9, sem: "HS", exam: "written", examDetail: "Written session examination, 180 minutes", vvz: 203424, counts: [{ cat: "Core courses - applied mathematics" }, { cat: "Core courses - further" }] },
+    { id: "401-3901-00L", title: "Linear & Combinatorial Optimization", ects: 10, sem: "HS", exam: "written", examDetail: "Session exam, written 180'; optional interim exam counts 30% only if it beats the final", vvz: 203698, counts: [{ cat: "Core courses - applied mathematics" }, { cat: "Core courses - further" }] },
+    { id: "401-3622-00L", title: "Statistical Modelling", ects: 7, sem: "HS", exam: "written", examDetail: "Written session examination, 120 minutes", vvz: 203951, counts: [{ cat: "Core courses - applied mathematics" }, { cat: "Core courses - further" }] },
+    { id: "252-0209-00L", title: "Algorithms, Probability, and Computing", ects: 8, sem: "HS", exam: "written", examDetail: "Written session examination, 180 minutes", vvz: 202674, counts: [{ cat: "Core courses - applied mathematics" }, { cat: "Core courses - further" }] },
+    { id: "402-0205-00L", title: "Quantum Mechanics I", ects: 8, sem: "HS", exam: "written", examDetail: "Written session examination, 180 minutes", vvz: 203243, counts: [{ cat: "Core courses - applied mathematics" }, { cat: "Core courses - further" }] },
+    // Electives (Wahlfächer), all VVZ "Selection" subgroups combined:
+    { id: "401-3059-00L", title: "Combinatorics II", ects: 4, sem: "HS", exam: "oral", examDetail: "Oral session examination, 20 minutes", vvz: 203293, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-4202-11L", title: "Representation Theory", ects: 5, sem: "HS", exam: "oral", examDetail: "Oral session examination, 20 minutes", vvz: 206378, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3057-00L", title: "Finite Geometries II", ects: 4, sem: "HS", exam: "oral", examDetail: "Oral session examination, 20 minutes", vvz: 203570, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3351-00L", title: "Partial Differential Equations", ects: 9, sem: "HS", exam: "written", examDetail: "Written session examination, 180 minutes", vvz: 206718, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-4115-00L", title: "Introduction to Geometric Measure Theory", ects: 7, sem: "HS", exam: "oral", examDetail: "Oral session examination, 20 minutes", vvz: 205479, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-4623-00L", title: "Time Series Analysis", ects: 4, sem: "HS", exam: "written", examDetail: "Written session examination, 120 minutes", vvz: 204244, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-4627-00L", title: "Empirical Process Theory and Applications", ects: 4, sem: "HS", exam: "written", examDetail: "Written session examination, 120 minutes", vvz: 203604, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-0625-01L", title: "Applied Analysis of Variance and Experimental Design", ects: 5, sem: "HS", exam: "written", examDetail: "Written session examination, 120 minutes", vvz: 203631, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-0649-00L", title: "Applied Statistical Regression", ects: 5, sem: "HS", exam: "written", examDetail: "Written session examination, 120 minutes", vvz: 203871, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3628-14L", title: "Bayesian Statistics", ects: 4, sem: "HS", exam: "written", examDetail: "Written session examination, 120 minutes", vvz: 204726, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3922-00L", title: "Life Insurance Mathematics", ects: 4, sem: "HS", exam: "oral", examDetail: "Oral session examination, 20 minutes", vvz: 203386, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3925-00L", title: "Non-Life Insurance: Mathematics and Statistics", ects: 8, sem: "HS", exam: "oral", examDetail: "Oral session examination, 30 minutes", vvz: 203563, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3927-00L", title: "Mathematical Modelling in Life Insurance", ects: 4, sem: "HS", exam: "oral", examDetail: "Oral session examination, 20 minutes", vvz: 203492, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3931-00L", title: "Responsible Machine Learning with Insurance Applications", ects: 4, sem: "HS", exam: "oral", examDetail: "Oral session examination, 30 minutes", vvz: 203497, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "402-0830-00L", title: "General Relativity", ects: 10, sem: "HS", exam: "written", examDetail: "Written session examination, 180 minutes", vvz: 203858, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3055-64L", title: "Algebraic Methods in Combinatorics", ects: 5, sem: "HS", exam: "written", examDetail: "Session exam, written 180'; printed lecture notes permitted. No coursework.", vvz: 204084, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3054-14L", title: "Probabilistic Methods in Combinatorics", ects: 5, sem: "HS", exam: "written", examDetail: "Session exam, written 180'; printed lecture notes permitted. No coursework.", vvz: 204178, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "252-1425-00L", title: "Geometry: Combinatorics and Algorithms", ects: 8, sem: "HS", exam: "oral", examDetail: "Session exam, oral 30' with 30' preparation (60%) + 2 graded homeworks (20% each)", vvz: 204238, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "263-4500-00L", title: "Advanced Algorithms", ects: 9, sem: "HS", exam: "oral", examDetail: "Session exam, oral 25' open-book (50%) + 2 graded homeworks (50%)", vvz: 202664, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3071-00L", title: "Structural Graph Theory", ects: 5, sem: "HS", exam: "written", examDetail: "Session exam, written 180'; offered only in the two sessions after the course. No coursework.", vvz: 204829, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3502-76L", title: "Reading Course", ects: 2, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3503-76L", title: "Reading Course", ects: 3, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3504-76L", title: "Reading Course", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3504-02L", title: "Reading Course (No. 2)", ects: 4, sem: "FS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 209538, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3502-75L", title: "Reading Course", ects: 2, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 203223, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3504-75L", title: "Reading Course", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 203336, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "263-4511-00L", title: "Projects in Topological Data Analysis", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance: group project, written report + oral presentation", vvz: 203248, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "263-5300-00L", title: "Guarantees for Machine Learning", ects: 7, sem: "HS", exam: "oral", examDetail: "Graded semester performance: oral midterm (60%) + course project (40%) + mandatory pass/fail homework", vvz: 204713, counts: [{ cat: "Electives (Wahlfächer)" }] },
+    { id: "401-3913-01L", title: "Mathematical Foundations for Finance", ects: 4, sem: "HS", exam: "written", examDetail: "Written session examination, 180 minutes", vvz: 203094, note: "Eligible as an elective only if 401-3888-00L Introduction to Mathematical Finance was not credited at Bachelor's or Master's level.", counts: [{ cat: "Electives (Wahlfächer)" }] },
+
+    // Seminars and semester papers: explicit 2026W VVZ list.
+    { id: "401-2020-26L", title: "Topics in Competition Mathematics", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 207043, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3030-76L", title: "Iterated Forcing", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 207041, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3050-72L", title: "Student Seminar in Combinatorics", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 202748, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3340-76L", title: "Ordinary Differential Equations", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 207158, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3350-22L", title: "Topics in Geometric Group Theory", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 207023, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3370-24L", title: "Furstenberg's Correspondence Principle", ects: 4, sem: "FS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 181458, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3620-75L", title: "Student Seminar in Statistics: Representation Learning", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 202560, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3920-76L", title: "Probability and Finance", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 207024, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3930-76L", title: "Introduction to Stochastic Optimal Control", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 207198, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3940-76L", title: "Student Seminar on Mathematics of Data Science: Efficient Sampling of Quadratic Gibbs Measures", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 204265, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3950-76L", title: "Student Seminar on Mathematics of Data Science: Curvature for Graphs and Markov Chains", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 207258, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-4350-76L", title: "Collisional Kinetic Theory: Entropy and Fisher Information", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 207018, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-4550-76L", title: "Topics in Algebraic Topology", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3000-76L", title: "Illustrating Mathematics with a View toward Outreach", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-4370-76L", title: "Ergodic Theory of Markov Chains", ects: 4, sem: "HS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 207040, counts: [{ cat: "Seminars and semester papers" }] },
+    { id: "401-3400-01L", title: "Semester Paper", ects: 4, sem: "FS", exam: "none", examDetail: "Graded semester performance; the VVZ publishes no further detail", vvz: 209741, counts: [{ cat: "Seminars and semester papers" }] },
+
+    // Science in Perspective (GESS): the D-MATH-recommended Type B list (2026W).
+    { id: "851-0742-00L", title: "Contract Design I", ects: 3, sem: "HS", exam: "?", vvz: 204055, counts: [{ cat: "Science in Perspective (GESS)" }] },
+    { id: "851-0252-15L", title: "Network Analysis", ects: 3, sem: "HS", exam: "none", examDetail: "Graded semester performance", vvz: 203030, counts: [{ cat: "Science in Perspective (GESS)" }] },
+    { id: "853-0061-00L", title: "Introduction to Cybersecurity Politics", ects: 3, sem: "HS", exam: "?", vvz: 203319, counts: [{ cat: "Science in Perspective (GESS)" }] },
+    { id: "853-8002-00L", title: "The Role of Technology in National and International Security Policy", ects: 3, sem: "HS", exam: "?", vvz: 203454, counts: [{ cat: "Science in Perspective (GESS)" }] },
+    { id: "851-0763-00L", title: "Supervised Research (Law, Economics, and Data Science)", ects: 3, sem: "HS", exam: "?", vvz: 204793, counts: [{ cat: "Science in Perspective (GESS)" }] },
+    { id: "851-0562-00L", title: "Correspondence, Meeting Minutes, and Access Apps. Contemporary History of Knowledge and Media", ects: 3, sem: "HS", exam: "?", vvz: 205704, counts: [{ cat: "Science in Perspective (GESS)" }] },
   ],
 });

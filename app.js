@@ -121,8 +121,66 @@
 
   /* ------------------------------------------------------------ helpers */
 
-  const byId = () => Object.fromEntries((prog ? prog.catalogue : []).map(c => [c.id, c]));
+  // Courses already in the plan but not on the active programme's own catalogue: a
+  // cross-programme addition (see addForeignCourse). Backfilled from whichever other
+  // programme they came from, so the plan table keeps rendering them across reloads.
+  const NOT_COUNTED = "(not counted)";
+  function byId() {
+    const own = (prog ? prog.catalogue : []).map(c => [c.id, c]);
+    const ownIds = new Set(own.map(([id]) => id));
+    const planIds = Object.keys((state && state.plan) || {});
+    const foreign = [];
+    for (const id of planIds) {
+      if (ownIds.has(id)) continue;
+      for (const p of programmes) {
+        if (p === prog) continue;
+        const c = (p.catalogue || []).find(x => x.id === id);
+        if (c) {
+          foreign.push([id, Object.assign({}, c, {
+            foreignFrom: p.name,
+            counts: (prog && (prog.categories || []).some(x => x.key === NOT_COUNTED)) ? [{ cat: NOT_COUNTED }] : [],
+          })]);
+          break;
+        }
+      }
+    }
+    return Object.fromEntries(own.concat(foreign));
+  }
   let CAT = {};
+
+  const FUZZY_MIN_LEN = 2;
+  const ALNUM = /[a-z0-9]/;
+  function normFuzzy(s) { return (s || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+  function isWordStart(t, i) { return i === 0 || !ALNUM.test(t[i - 1]); }
+  /** Full-text substring match anywhere, or - failing that - an abbreviation match where
+   *  each matched title character must either continue the previous match contiguously or
+   *  start a new word. This is what makes "ASL" find "Advanced Systems Lab" and "NetSec"
+   *  find "Network Security" without every short query matching almost everything (a plain
+   *  in-order subsequence match is too loose: "ASL" is also a subsequence of "Algorithms Lab"). */
+  function fuzzyMatch(query, text) {
+    const q = normFuzzy(query);
+    if (!q) return true;
+    if (normFuzzy(text).includes(q)) return true;
+    if (q.length < FUZZY_MIN_LEN) return false;
+    const t = (text || "").toLowerCase();
+    let qi = 0, lastTi = -1;
+    for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+      if (t[ti] !== q[qi] || !ALNUM.test(t[ti])) continue;
+      if (ti !== lastTi + 1 && !isWordStart(t, ti)) continue;
+      qi++; lastTi = ti;
+    }
+    return qi === q.length;
+  }
+  function courseMatches(c, q) { return fuzzyMatch(q, c.title) || fuzzyMatch(q, c.id); }
+
+  // Below this many own-programme matches, and only while actively searching, also
+  // offer matches from OTHER programmes' catalogues - useful for cross-registering a
+  // course your own programme doesn't list, which ETH generally allows only with the
+  // studies administration office's sign-off.
+  const FEW_RESULTS = 5;
+  const FOREIGN_WARNING = "Not on this programme's own course list — found on another programme's "
+    + "catalogue instead. Counting it towards your degree normally needs prior approval from your "
+    + "studies administration office.";
 
   function semesters() { return state.profile.semesters.concat([UNDECIDED]); }
 
@@ -549,7 +607,9 @@
       const opts = categoryList().map(x => x.key);
       if (!opts.includes(p.category)) opts.unshift(p.category);
       return `<tr class="${tier ? "tier-" + tier : "inactive"}">
-        <td><div class="ctitle">${esc(c.title)}</div>
+        <td><div class="ctitle">${esc(c.title)}${c.foreignFrom
+            ? ` <span class="warnicon" tabindex="0" title="${esc(`From ${c.foreignFrom}, not this programme's own list. ${FOREIGN_WARNING}`)}">&#9888;</span>`
+            : ""}</div>
           <div class="cid">${esc(c.id)}${c.vvz ? ` &middot; <a href="https://www.vvz.ethz.ch/Vorlesungsverzeichnis/lerneinheit.view?lerneinheitId=${c.vvz}&semkez=${c.sem === "FS" ? "2026S" : "2026W"}&lang=en" target="_blank" rel="noopener">VVZ</a>` : ""}</div>
           ${c.examDetail ? `<div class="cnote">${esc(c.examDetail)}</div>` : ""}
           ${c.note ? `<div class="cnote">${esc(c.note)}</div>` : ""}</td>
@@ -570,18 +630,34 @@
   }
 
   function renderCatalogue() {
-    const q = ($("#cat-search").value || "").toLowerCase().trim();
+    const q = ($("#cat-search").value || "").trim();
     const fc = $("#cat-filter").value, fs = $("#sem-filter").value, fe = $("#exam-filter").value;
     const onlyOk = $("#only-eligible").checked;
     const rows = prog.catalogue.filter(c => {
       if (onlyOk && !isEligible(c)) return false;
-      if (q && !(c.title.toLowerCase().includes(q) || c.id.toLowerCase().includes(q))) return false;
+      if (q && !courseMatches(c, q)) return false;
       if (fc && !eligibleCats(c).includes(fc)) return false;
       if (fs && c.sem !== fs) return false;
       if (fe && c.exam !== fe) return false;
       return true;
     });
-    $("#cat-browse tbody").innerHTML = rows.map(c => {
+
+    const ownIds = new Set(prog.catalogue.map(c => c.id));
+    const foreignRows = [];
+    if (q && rows.length < FEW_RESULTS) {
+      for (const p of programmes) {
+        if (p === prog) continue;
+        for (const c of p.catalogue || []) {
+          if (ownIds.has(c.id) || foreignRows.some(([, x]) => x.id === c.id)) continue;
+          if (!courseMatches(c, q)) continue;
+          if (fs && c.sem !== fs) continue;
+          if (fe && c.exam !== fe) continue;
+          foreignRows.push([p, c]);
+        }
+      }
+    }
+
+    const ownHtml = rows.map(c => {
       const inPlan = !!state.plan[c.id];
       const cats = eligibleCats(c);
       return `<tr><td><div class="ctitle">${esc(c.title)}</div><div class="cid">${esc(c.id)}</div>
@@ -590,7 +666,21 @@
         <td>${examPill(c.exam)} ${periodicityPill(c.periodicity)}</td>
         <td class="cats">${cats.length ? cats.map(esc).join(" &middot; ") : '<em>not available with your major/minor</em>'}</td>
         <td><button class="addbtn" data-add="${esc(c.id)}" ${inPlan || !cats.length ? "disabled" : ""}>${inPlan ? "in plan" : "add"}</button></td></tr>`;
-    }).join("") || `<tr><td colspan="6" class="cnote">${prog.catalogue.length
+    }).join("");
+
+    const foreignHtml = foreignRows.map(([p, c]) => {
+      const inPlan = !!state.plan[c.id];
+      return `<tr class="foreign"><td><div class="ctitle">${esc(c.title)}
+          <span class="warnicon" tabindex="0" title="${esc(FOREIGN_WARNING)}">&#9888;</span></div>
+          <div class="cid">${esc(c.id)}</div>
+          ${c.note ? `<div class="cnote">${esc(c.note)}</div>` : ""}</td>
+        <td class="num">${c.ects}</td><td>${esc(c.sem === "NA" ? "&ndash;" : c.sem)}</td>
+        <td>${examPill(c.exam)} ${periodicityPill(c.periodicity)}</td>
+        <td class="cats"><em>from ${esc(p.name)}, not on your programme's list</em></td>
+        <td><button class="addbtn" data-add-foreign="${esc(c.id)}::${esc(p.id)}" ${inPlan ? "disabled" : ""}>${inPlan ? "in plan" : "add anyway"}</button></td></tr>`;
+    }).join("");
+
+    $("#cat-browse tbody").innerHTML = (ownHtml + foreignHtml) || `<tr><td colspan="6" class="cnote">${prog.catalogue.length
         ? "Nothing matches those filters."
         : "This programme has its credit rules defined but no course catalogue yet. "
           + "You can still add courses by editing its programme file, or switch programme above."
@@ -711,6 +801,22 @@
       state.plan[c.id] = { status: "Open", category: cats[0], semester: guess || UNDECIDED };
       if (c.flexEcts) state.plan[c.id].ects = c.ects;
       render(); toast(`Added ${c.title}`); return;
+    }
+    const addForeign = e.target.closest("[data-add-foreign]");
+    if (addForeign) {
+      const [id, progId] = addForeign.dataset.addForeign.split("::");
+      const srcProg = programmes.find(p => p.id === progId);
+      const c = srcProg && (srcProg.catalogue || []).find(x => x.id === id);
+      if (!c) return;
+      const sems = state.profile.semesters;
+      const guess = c.sem === "HS" ? sems.find(s => /^HS/i.test(s))
+                  : c.sem === "FS" ? sems.find(s => /^FS/i.test(s)) : null;
+      const cat = (prog.categories || []).some(x => x.key === NOT_COUNTED) ? NOT_COUNTED : categoryList()[0].key;
+      state.plan[c.id] = { status: "Open", category: cat, semester: guess || UNDECIDED };
+      if (c.flexEcts) state.plan[c.id].ects = c.ects;
+      render();
+      toast(`Added ${c.title} from ${srcProg.name} — remember, this needs administration approval to actually count`);
+      return;
     }
     const rm = e.target.closest("[data-remove]");
     if (rm) { if (!CAT[rm.dataset.remove].mandatory) delete state.plan[rm.dataset.remove]; render(); }

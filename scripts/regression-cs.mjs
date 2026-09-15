@@ -16,14 +16,17 @@ const ID = "eth-msc-computer-science-2020";
 const EXPECTED = {
   totalRequired: 120,
   maxAccreditable: 130,
-  courses: 61,
+  courses: 125,
   categories: 10,
-  exams: { written: 28, oral: 14, none: 19, "?": 0 },
+  // 2026-09-15: bulk-added 38 major/minor courses (all 5 majors, all 9 minors, from the
+  // official D-INFK Majors_HS26.pdf/Minors_HS26.pdf) and 26 GESS Science in Perspective
+  // courses (D-INFK-recommended Type B list). New courses carry exam "?" (unverified).
+  exams: { written: 28, oral: 14, none: 19, "?": 64 },
   minimaSum: 92,          // sum of category req
   groupExcess: 10,        // "Major total" 26 minus (Core 16 + Elective 0)
   remainderCredits: 18,   // 92 + 10 + 18 = 120
   // courses reachable by the fully-tagged track this programme was built for
-  srsTcsVisible: 61,
+  srsTcsVisible: 125,
   finalProject: { category: "Master's Thesis", credits: 30 },
 };
 
